@@ -3,6 +3,8 @@
 std::ofstream fout("abce.out");
 /// rezolvare pentru  problema
 /// https://www.infoarena.ro/problema/abce
+/// https://www.infoarena.ro/job_detail/2606429
+
 struct Nod
 {
     int val;        /// valoarea din nod
