@@ -1,0 +1,408 @@
+#include <bits/stdc++.h>
+
+std::ofstream fout("abce.out");
+/// rezolvare pentru  problema
+/// https://www.infoarena.ro/problema/abce
+struct Nod
+{
+    int val;        /// valoarea din nod
+    Nod *stanga;    /// pointer pentru nodul din stanga
+    Nod *dreapta;   /// pointer pentru nodul din dreapta
+    int h;          /// inaltimea la care se afla nodul
+};
+
+int Inaltime(Nod *nod)
+{   /// returneaza inaltimea nodului
+    if (nod == NULL)
+        return 0;
+    return nod->h;
+}
+
+Nod* Nod_nou(int val)
+{   /// creaza primul nod din BST
+    Nod* nod = new Nod();
+    nod->val = val;
+    nod->stanga = NULL;
+    nod->dreapta = NULL;
+    nod->h = 1;
+    return nod;
+}
+
+    /**
+         y                               x
+        / \     Right Rotation          / \
+       x   T3   - - - - - - - >        T1  y
+      / \       < - - - - - - -           / \
+     T1  T2     Left Rotation            T2  T3
+    /*/
+
+Nod* Rotatie_Dreapta(Nod* y)
+{
+    Nod* x = y->stanga;
+    Nod* T2 = x->dreapta;
+
+    x->dreapta = y;
+    y->stanga = T2;
+
+    y->h = std::max(Inaltime(y->stanga), Inaltime(y->dreapta)) + 1;
+    x->h = std::max(Inaltime(x->stanga), Inaltime(x->dreapta)) + 1;
+    return x;
+}
+
+    /**
+       x                                 y
+      / \       Left Rotation           / \
+     T1  y      - - - - - - - >        x   T3
+        / \     < - - - - - - -       / \
+      T2  T3    Right Rotation       T1  T2
+    /*/
+
+Nod* Rotatie_Stanga(Nod* x)
+{
+    Nod* y = x->dreapta;
+    Nod* T2 = y->stanga;
+
+    y->stanga = x;
+    x->dreapta = T2;
+
+    x->h = std::max(Inaltime(x->stanga), Inaltime(x->dreapta)) + 1;
+    y->h = std::max(Inaltime(y->stanga), Inaltime(y->dreapta)) + 1;
+    return y;
+}
+
+int Echilibru(Nod* nod)
+{   /// returneaza diferenta dintre ianltimea nodului din stanga si inaltimea nodului din dreapta
+    if (nod == NULL)
+        return 0;
+    return Inaltime(nod->stanga) - Inaltime(nod->dreapta);
+}
+
+Nod* Inserare(Nod* nod, int val)
+{
+    ///  crearea BST
+    if (nod == NULL)
+        return (Nod_nou(val));
+
+    /// alegem partea (stanta / dreapta)
+    if (val < nod->val)
+        nod->stanga = Inserare(nod->stanga, val);
+    else if (val > nod->val)
+        nod->dreapta = Inserare(nod->dreapta, val);
+    else /// val se afla deja in BST
+        return nod;
+
+    /// ii setam inaltimea nodului 'nod'
+    nod->h = 1 + std::max(Inaltime(nod->stanga), Inaltime(nod->dreapta));
+
+    /// verificam echilibrul BST dupa adaugarea nodului 'nod'
+    int balanta = Echilibru(nod);
+
+    /// Cazul Stanga-Stanga
+    /**
+          z                                      y
+         / \                                   /   \
+        y   T4      Right Rotate (z)          x      z
+       / \          - - - - - - - - ->      /  \    /  \
+      x   T3                               T1  T2  T3  T4
+     / \
+    T1   T2
+    */
+    if (balanta > 1 && val < nod->stanga->val)
+        return Rotatie_Dreapta(nod);
+
+    /// Cazul Dreapta-Dreapta
+    /**
+      z                                y
+     /  \                            /   \
+    T1   y     Left Rotate(z)       z      x
+        /  \   - - - - - - - ->    / \    / \
+       T2   x                     T1  T2 T3  T4
+           / \
+         T3  T4
+    */
+    if (balanta < -1 && val > nod->dreapta->val)
+        return Rotatie_Stanga(nod);
+
+    /// Cazul Stanga-Dreapta
+    /**
+         z                               z                           x
+        / \                            /   \                        /  \
+       y   T4  Left Rotate (y)        x    T4  Right Rotate(z)    y      z
+      / \      - - - - - - - - ->    /  \      - - - - - - - ->  / \    / \
+    T1   x                          y    T3                    T1  T2 T3  T4
+        / \                        / \
+      T2   T3                    T1   T2
+    */
+    if (balanta > 1 && val > nod->stanga->val)
+    {
+        nod->stanga = Rotatie_Stanga(nod->stanga);
+        return Rotatie_Dreapta(nod);
+    }
+
+    /// Cazul Dreapta-Stanga
+    /**
+       z                            z                            x
+      / \                          / \                          /  \
+    T1   y   Right Rotate (y)    T1   x      Left Rotate(z)   z      y
+        / \  - - - - - - - - ->     /  \   - - - - - - - ->  / \    / \
+       x   T4                      T2   y                  T1  T2  T3  T4
+      / \                              /  \
+    T2   T3                           T3   T4
+    */
+    if (balanta < -1 && val < nod->dreapta->val)
+    {
+        nod->dreapta = Rotatie_Dreapta(nod->dreapta);
+        return Rotatie_Stanga(nod);
+    }
+    return nod;
+}
+
+Nod* Nod_Minim(Nod* nod)
+{   /// cautam cea mai mica valoare din subarobre
+    Nod* minim = nod;
+    while(minim->stanga != NULL)
+        minim = minim->stanga;
+    return minim;
+}
+
+Nod* Stergere(Nod* radacina, int val)
+{
+    /// am ajuns la capat de BST
+    if (radacina == NULL)
+        return radacina;
+
+    /// cautam nodul din BST care are valoarea 'val'
+    /// 1. daca valoarea cautata este mai mica decat valoarea radacinii, mergem in dreapta
+    if (val < radacina->val)
+        radacina->stanga = Stergere(radacina->stanga, val);
+    /// 2. daca valoarea cautata este mai mare decat valoarea radacinii, mergem in stanga
+    else if (val > radacina->val)
+        radacina->dreapta = Stergere(radacina->dreapta, val);
+    /// 3. am gasit nodul cu valoarea cautata
+    else /// if (val == radacina->val)
+    {
+        /// nodul final are doar un 'copil' sau nu are
+        if((radacina->stanga == NULL) || (radacina->dreapta == NULL))
+        {
+            /// gasim 'copilul' nenul
+            Nod* frunza = radacina->stanga;
+            if (radacina->stanga == NULL)
+                frunza = radacina->dreapta;
+            ///SAU Nod* frunza  = radacina->stanga ? radacina->stanga : radacina->dreapta;
+            /// fara 'copil'
+            if (frunza == NULL)
+            {
+                frunza = radacina;
+                radacina = NULL;
+            }
+            else    /// un 'copil'
+                *radacina = *frunza;
+            /// stergem nodul
+            delete frunza;
+        }   /// nodul are 2 copii
+        else
+        {
+            /// cautam succesorul inordonat (cel mai mic in subarborele din dreapta)
+            Nod* frunza = Nod_Minim(radacina->dreapta);
+            /// copiem valoarea
+            radacina->val = frunza->val;
+            /// stergem succesorul inordonat
+            radacina->dreapta = Stergere(radacina->dreapta, frunza->val);
+        }
+    }
+    /// daca nu mai exista frunze
+    if (radacina == NULL)
+        return radacina;
+    /// ii setam inaltimea nodului curent
+    radacina->h = 1 + std::max(Inaltime(radacina->stanga), Inaltime(radacina->dreapta));
+    /// verificam echilibrul BST dupa stergerea nodului cu valoarea 'val'
+    int balanta = Echilibru(radacina);
+
+    /// Cazul Stanga-Stanga
+    /**
+          z                                      y
+         / \                                   /   \
+        y   T4      Right Rotate (z)          x      z
+       / \          - - - - - - - - ->      /  \    /  \
+      x   T3                               T1  T2  T3  T4
+     / \
+    T1   T2
+    */
+    if (balanta > 1 && Echilibru(radacina->stanga) >= 0)
+        return Rotatie_Dreapta(radacina);
+
+    /// Cazul Dreapta-Dreapta
+    /**
+      z                                y
+     /  \                            /   \
+    T1   y     Left Rotate(z)       z      x
+        /  \   - - - - - - - ->    / \    / \
+       T2   x                     T1  T2 T3  T4
+           / \
+         T3  T4
+    */
+    if (balanta < -1 && Echilibru(radacina->dreapta) <= 0)
+        return Rotatie_Stanga(radacina);
+
+    /// Cazul Stanga-Dreapta
+    /**
+         z                               z                           x
+        / \                            /   \                        /  \
+       y   T4  Left Rotate (y)        x    T4  Right Rotate(z)    y      z
+      / \      - - - - - - - - ->    /  \      - - - - - - - ->  / \    / \
+    T1   x                          y    T3                    T1  T2 T3  T4
+        / \                        / \
+      T2   T3                    T1   T2
+    */
+    if (balanta > 1 && Echilibru(radacina->stanga) < 0)
+    {
+        radacina->stanga = Rotatie_Stanga(radacina->stanga);
+        return Rotatie_Dreapta(radacina);
+    }
+
+    /// Cazul Dreapta-Stanga
+    /**
+       z                            z                            x
+      / \                          / \                          /  \
+    T1   y   Right Rotate (y)    T1   x      Left Rotate(z)   z      y
+        / \  - - - - - - - - ->     /  \   - - - - - - - ->  / \    / \
+       x   T4                      T2   y                  T1  T2  T3  T4
+      / \                              /  \
+    T2   T3                           T3   T4
+    */
+    if (balanta < -1 && Echilibru(radacina->dreapta) > 0)
+    {
+        radacina->dreapta = Rotatie_Dreapta(radacina->dreapta);
+        return Rotatie_Stanga(radacina);
+    }
+
+    return radacina;
+}
+
+void Cautare(Nod* nod, int val)
+{
+    if (nod != NULL)
+    {
+        /// daca valoarea cautata este mai mare decat nodul stang
+        /// (care este mai mic decat radacina), cautam mai departe in stanga
+        if (nod->val > val)
+            Cautare(nod->stanga, val);
+        /// daca valoarea cautata esta mai mica decat nodul drept
+        /// (care este mai mare decat radacina), cautam mai departe in dreapta
+        else if (nod->val < val)
+            Cautare(nod->dreapta, val);
+        /// caz placut, gasim valoarea cautata
+        else
+            fout << "1\n";/// nod->val == val
+    }
+    /// nu mai avem alt nod, nu am gasit valoarea cautata
+    else fout << "0\n";
+}
+
+void Sortare(Nod* nod, int x, int y)
+{
+    /// nodul din stanga este mereu mai mic decat radacina
+    /// nodul din dreapta este mereu mai mare decat radacina
+    if (nod != NULL)
+    {
+        /// afisam cel mai mic nod
+        Sortare(nod->stanga, x, y);
+        /// afisam valoarea intermediara (radacina)
+        if (x <= nod->val && nod->val <= y)
+            fout << nod->val << " ";
+        /// afisam cel mai mare nod
+        Sortare(nod->dreapta, x, y);
+    }
+    else return; /// nu mai avem noduri
+}
+
+Nod* Nod_Maxim(Nod* nod)
+{   /// cautam cea mai mare valoare din subarbore
+    Nod* maxim = nod;
+    while (maxim->dreapta != NULL)
+        maxim = maxim->dreapta;
+    return maxim;
+}
+
+void Predecesor(Nod* nod, int val)
+{   /// nodul cu cea mai mare valoare, mai mica (sau egala) decat 'val'
+    /// nu mai avem unde merge
+    if (nod == NULL)
+        fout << "-1";
+    /// valoarea nodului curent este mai mare sau egala decat valoarea cautata
+    else if (nod->val > val)
+        Predecesor(nod->stanga, val);
+    /// nu mai avem unde merge sau
+    /// urmatoarea cea mai mica valoare, mai mare decat valoarea din nod este mai mare decat val
+    else if ((nod->dreapta == NULL) || Nod_Minim(nod->dreapta)->val > val)
+        fout << nod->val << "\n";
+    /// valoarea nodului curent este mai mica decat valoarea cautata
+    else
+        Predecesor(nod->dreapta, val);
+}
+
+void Succesor(Nod* nod, int val)
+{   /// nodul cu cea mai mica valoare, mai mare sau egal decat 'val'
+    /// nu mai avem unde merge
+    if (nod == NULL)
+        fout << "-1";
+    /// valoarea nodului curent este mai mica sau egal decat valoarea cautata
+    else if (nod->val < val)
+        Succesor(nod->dreapta, val);
+    /// nu mai avem unde merge sau
+    /// urmatoarea cea mai mare valoare, mai mica decat valoare din nod este mai mica decat val
+    else if ((nod->stanga == NULL) || (Nod_Maxim(nod->stanga)->val < val))
+        fout << nod->val << "\n";
+    /// valoarea nodului curent este mai mare decat valoarea cautata
+    else
+        Succesor(nod->stanga, val);
+}
+
+int main()
+{
+    int n, op, x, y;
+    Nod* avl = NULL;
+    std::ifstream fin ("abce.in");
+    fin >> n;
+    while (n)
+    {
+        fin >> op;
+        if (op == 1)
+        {   ///Inserare
+            fin >> x;
+            avl = Inserare(avl, x);
+        }
+        else if (op == 2)
+        {   ///Stergere
+            fin >> x;
+            avl = Stergere(avl, x);
+        }
+        else if (op == 3)
+        {   ///Cautare;
+            /// 1 - daca exista in BST
+            /// 0 - daca nu exista in BST
+            fin >> x;
+            Cautare(avl, x);
+        }
+        else if (op == 4)
+        {   /// afisati cel mai mare numar Y, mai mic sau egal cu X
+            fin >> x;
+            Predecesor(avl, x);
+        }
+        else if (op == 5)
+        {   /// afisati cel mai mic numar Y, mai mare sau egal cu X
+            fin >> x;
+            Succesor(avl, x);
+        }
+        else if (op == 6)
+        {   /// afisati in ordine sortata, toate numerele Z, unde X ≤ Z ≤ Y
+            fin >> x >> y;
+            Sortare(avl, x, y);
+            fout << "\n";
+        }
+        n--;
+    }
+    fin.close();
+    fout.close();
+    return 0;
+}
